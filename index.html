@@ -355,6 +355,7 @@ function startTest(){
 
 function renderQ(){
   if(current>=testQ.length){showResults();return;}
+  answered=false;
   const q=testQ[current],total=testQ.length;
   document.getElementById('tp-q').textContent=`Pregunta ${current+1} de ${total}`;
   document.getElementById('tp-sub').textContent=`Test nº ${tCount}`;
@@ -372,10 +373,10 @@ function renderQ(){
     btn.onclick=()=>answer(opts[idx].orig,q.correct_index,btn,opts,q);
     grid.appendChild(btn);
   });
-  document.getElementById('feedback').className='feedback';
+  const fb=document.getElementById('feedback');
+  fb.className='feedback';fb.textContent='';
   document.getElementById('btn-next').style.display='none';
   document.getElementById('btn-skip').style.display='inline-block';
-  answered=false;
 }
 
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
