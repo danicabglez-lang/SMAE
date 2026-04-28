@@ -364,13 +364,15 @@ function renderQ(){
   document.getElementById('q-text').textContent=q.question;
   document.getElementById('q-pending-tag').style.display=q._pending?'inline-block':'none';
   updateLive();
-  let opts=q.options.map((t,i)=>({t,orig:i}));opts=shuffle(opts);
+  const shuffledOpts=shuffle(q.options.map((t,i)=>({t,orig:i})));
   const grid=document.getElementById('opts');grid.innerHTML='';
   ['A','B','C','D'].forEach((L,idx)=>{
+    const opt=shuffledOpts[idx];
     const btn=document.createElement('button');
     btn.className='opt-btn';
-    btn.innerHTML=`<span class="opt-l">${L}</span><span class="opt-t">${esc(opts[idx].t)}</span>`;
-    btn.onclick=()=>answer(opts[idx].orig,q.correct_index,btn,opts,q);
+    btn.dataset.orig=opt.orig;
+    btn.innerHTML=`<span class="opt-l">${L}</span><span class="opt-t">${esc(opt.t)}</span>`;
+    btn.onclick=()=>answer(opt.orig,q.correct_index,btn,q);
     grid.appendChild(btn);
   });
   const fb=document.getElementById('feedback');
@@ -387,14 +389,15 @@ function updateLive(){
   document.getElementById('ls-p').textContent=(nC-nW*cfg.penalty).toFixed(2);
 }
 
-function answer(chosen,correct,btn,opts,q){
+function answer(chosen,correct,btn,q){
   if(answered)return;answered=true;
   const ok=chosen===correct;
   if(ok)nC++;else nW++;
   updateLive();
-  document.querySelectorAll('.opt-btn').forEach((b,i)=>{
+  document.querySelectorAll('.opt-btn').forEach(b=>{
     b.disabled=true;
-    if(opts[i].orig===correct)b.classList.add('correct');
+    const orig=parseInt(b.dataset.orig);
+    if(orig===correct)b.classList.add('correct');
     else if(b===btn&&!ok)b.classList.add('wrong');
   });
   results.push({q:q.question,options:q.options,correct_index:q.correct_index,chosen_index:chosen,skipped:false,qIdx:q._qIdx,pending:q._pending});
