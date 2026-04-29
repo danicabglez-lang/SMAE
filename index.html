@@ -356,6 +356,7 @@ function startTest(){
 function renderQ(){
   if(current>=testQ.length){showResults();return;}
   answered=false;
+
   const q=testQ[current],total=testQ.length;
   document.getElementById('tp-q').textContent=`Pregunta ${current+1} de ${total}`;
   document.getElementById('tp-sub').textContent=`Test nº ${tCount}`;
@@ -364,24 +365,39 @@ function renderQ(){
   document.getElementById('q-text').textContent=q.question;
   document.getElementById('q-pending-tag').style.display=q._pending?'inline-block':'none';
   updateLive();
+
+  const fb=document.getElementById('feedback');
+  fb.className='feedback';
+  fb.textContent='';
+
   const shuffledOpts=shuffle(q.options.map((t,i)=>({t,orig:i})));
-  const grid=document.getElementById('opts');grid.innerHTML='';
+
+  // Reemplazar el contenedor entero para eliminar cualquier estado residual
+  const oldGrid=document.getElementById('opts');
+  const newGrid=document.createElement('div');
+  newGrid.id='opts';
+  newGrid.className='opts';
+  oldGrid.parentNode.replaceChild(newGrid,oldGrid);
+
   ['A','B','C','D'].forEach((L,idx)=>{
     const opt=shuffledOpts[idx];
     const btn=document.createElement('button');
     btn.className='opt-btn';
-    btn.dataset.orig=opt.orig;
+    btn.dataset.orig=String(opt.orig);
     btn.innerHTML=`<span class="opt-l">${L}</span><span class="opt-t">${esc(opt.t)}</span>`;
-    btn.onclick=()=>answer(opt.orig,q.correct_index,btn,q);
-    grid.appendChild(btn);
+    btn.addEventListener('click',function(){
+      if(answered)return;
+      answer(opt.orig,q.correct_index,btn,q);
+    });
+    newGrid.appendChild(btn);
   });
-  const fb=document.getElementById('feedback');
-  fb.className='feedback';fb.textContent='';
+
   document.getElementById('btn-next').style.display='none';
   document.getElementById('btn-skip').style.display='inline-block';
 }
 
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
 function updateLive(){
   document.getElementById('ls-c').textContent=nC;
   document.getElementById('ls-w').textContent=nW;
@@ -390,21 +406,42 @@ function updateLive(){
 }
 
 function answer(chosen,correct,btn,q){
-  if(answered)return;answered=true;
+  if(answered)return;
+  answered=true;
   const ok=chosen===correct;
   if(ok)nC++;else nW++;
   updateLive();
-  document.querySelectorAll('.opt-btn').forEach(b=>{
+
+  document.querySelectorAll('#opts .opt-btn').forEach(b=>{
     b.disabled=true;
-    const orig=parseInt(b.dataset.orig);
-    if(orig===correct)b.classList.add('correct');
-    else if(b===btn&&!ok)b.classList.add('wrong');
+    const orig=parseInt(b.dataset.orig,10);
+    if(orig===correct){
+      b.classList.add('correct');
+    } else if(b===btn&&!ok){
+      b.classList.add('wrong');
+    }
   });
-  results.push({q:q.question,options:q.options,correct_index:q.correct_index,chosen_index:chosen,skipped:false,qIdx:q._qIdx,pending:q._pending});
+
+  results.push({
+    q:q.question,
+    options:q.options,
+    correct_index:q.correct_index,
+    chosen_index:chosen,
+    skipped:false,
+    qIdx:q._qIdx,
+    pending:q._pending
+  });
+
   if(cfg.mode==='practice'){
     const fb=document.getElementById('feedback');
-    if(ok){fb.className='feedback ok';fb.textContent='✓ ¡Correcto!';}
-    else{const ct=q.options[correct]||'';fb.className='feedback err';fb.textContent=`✗ Correcta: "${ct.substring(0,130)}${ct.length>130?'...':''}"`;} 
+    if(ok){
+      fb.className='feedback ok';
+      fb.textContent='✓ ¡Correcto!';
+    } else {
+      const ct=q.options[correct]||'';
+      fb.className='feedback err';
+      fb.textContent=`✗ Correcta: "${ct.substring(0,130)}${ct.length>130?'...':''}"`; 
+    }
   }
   document.getElementById('btn-next').style.display='inline-block';
   document.getElementById('btn-skip').style.display='none';
